@@ -1,0 +1,321 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --font-cairo: 'Cairo', sans-serif;
+
+  /* Light Mode Colors */
+  --bg-main: #F2EFE7;
+  --bg-header: #C8DFDB;
+  --bg-card: #FFFFFF;
+  --color-secondary: #66A3BF;
+  --color-primary: #3368A0;
+  --btn-bg: #66A3BF;
+  --btn-hover: #3368A0;
+  --btn-text: #FFFFFF;
+  --border-color: #D3E0EA;
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --bg-main: #1B2A4A;
+  --bg-header: #263C66;
+  --bg-card: #203354;
+  --color-secondary: #C8DFDB;
+  --color-primary: #F2EFE7;
+  --btn-bg: #3368A0;
+  --btn-hover: #66A3BF;
+  --btn-text: #FFFFFF;
+  --border-color: #38517B;
+}
+
+html, body {
+  font-family: var(--font-cairo);
+  background-color: var(--bg-main);
+  color: var(--color-primary);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  direction: rtl;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Base utility helper classes for consistent styling */
+.bg-app {
+  background-color: var(--bg-main);
+}
+
+.bg-app-primary {
+  background-color: var(--color-primary);
+}
+
+.bg-header-app {
+  background-color: var(--bg-header);
+}
+
+.bg-card-app {
+  background-color: var(--bg-card);
+}
+
+.text-app-primary {
+  color: var(--color-primary);
+}
+
+.text-app-secondary {
+  color: var(--color-secondary);
+}
+
+.border-app {
+  border-color: var(--border-color);
+}
+
+.btn-app-primary {
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-app-primary:hover {
+  background-color: var(--btn-hover);
+}
+
+/* Print Styles: Dedicated isolated targets & clean PDF layouts */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  /* Force pure black/white high contrast colors for print across all themes */
+  :root,
+  .dark,
+  body {
+    --color-primary: #000000 !important;
+    --color-secondary: #334155 !important;
+    --bg-main: #ffffff !important;
+    --bg-card: #ffffff !important;
+    --border-color: #94a3b8 !important;
+    color: #000000 !important;
+    background-color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    direction: rtl !important;
+    font-family: var(--font-cairo), system-ui, sans-serif !important;
+  }
+
+  /* When report print is active: unconstrain modal ancestors cleanly without broad generic resets */
+  body[data-print-target] #root,
+  body.print-roles-target #root,
+  body.print-member-target #root {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body[data-print-target] main,
+  body[data-print-target] #root > div,
+  body[data-print-target] #root > div > div,
+  body[data-print-target] .modal-root,
+  body[data-print-target] .modal-dialog,
+  body[data-print-target] .modal-content-area,
+  body.print-roles-target main,
+  body.print-roles-target #root > div,
+  body.print-roles-target #root > div > div,
+  body.print-roles-target .modal-root,
+  body.print-roles-target .modal-dialog,
+  body.print-roles-target .modal-content-area,
+  body.print-member-target main,
+  body.print-member-target #root > div,
+  body.print-member-target #root > div > div,
+  body.print-member-target .modal-root,
+  body.print-member-target .modal-dialog,
+  body.print-member-target .modal-content-area {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    overflow: visible !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    inset: auto !important;
+    transform: none !important;
+  }
+
+  /* Reset vertical sibling spacing injected by Tailwind */
+  body[data-print-target] .space-y-6 > :not([hidden]) ~ :not([hidden]),
+  body[data-print-target] .space-y-4 > :not([hidden]) ~ :not([hidden]),
+  body.print-roles-target .space-y-6 > :not([hidden]) ~ :not([hidden]),
+  body.print-roles-target .space-y-4 > :not([hidden]) ~ :not([hidden]),
+  body.print-member-target .space-y-6 > :not([hidden]) ~ :not([hidden]),
+  body.print-member-target .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0 !important;
+  }
+
+  /* Hide interactive non-print elements */
+  header,
+  aside,
+  nav,
+  button,
+  .no-print,
+  .modal-backdrop,
+  .modal-header {
+    display: none !important;
+  }
+
+  /* Specific Print Target Isolation (Roles Table vs Member Statement) */
+  body[data-print-target="roles"] .print-page-content,
+  body[data-print-target="member"] .print-page-content,
+  body.print-roles-target .print-page-content,
+  body.print-member-target .print-page-content {
+    display: none !important;
+  }
+
+  /* Hide opposite modal print area */
+  body[data-print-target="roles"] #member-print-area,
+  body.print-roles-target #member-print-area {
+    display: none !important;
+  }
+  body[data-print-target="member"] #roles-print-area,
+  body.print-member-target #roles-print-area {
+    display: none !important;
+  }
+
+  /* Dedicated Print Report Container */
+  .print-report,
+  .print-area {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .print-report *,
+  .print-area * {
+    color: #000000 !important;
+    text-shadow: none !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-report .text-app-secondary,
+  .print-area .text-app-secondary,
+  .print-report p,
+  .print-area p,
+  .print-report span,
+  .print-area span {
+    color: #1e293b !important;
+  }
+
+  /* Unconstrain table wrapper overflow */
+  .print-report .overflow-x-auto,
+  .print-area .overflow-x-auto,
+  .print-report div:has(> table),
+  .print-area div:has(> table) {
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  /* Table print optimization: repeating header and clean borders */
+  .print-report table,
+  .print-area table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+    margin: 0 auto !important;
+  }
+
+  .print-report thead,
+  .print-area thead {
+    display: table-header-group !important;
+  }
+
+  .print-report tr,
+  .print-area tr {
+    page-break-inside: avoid !important;
+  }
+
+  .print-report th,
+  .print-report td,
+  .print-area th,
+  .print-area td {
+    border: 1px solid #475569 !important;
+    padding: 4px 6px !important;
+    color: #000000 !important;
+    font-size: 8.5pt !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .print-report th,
+  .print-area th {
+    background-color: #f1f5f9 !important;
+    font-weight: 700 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Clean background and borders for cards and badges in print */
+  .print-report .bg-slate-50,
+  .print-report .bg-sky-50,
+  .print-report .bg-white,
+  .print-area .bg-slate-50,
+  .print-area .bg-sky-50,
+  .print-area .bg-white {
+    background-color: #f8fafc !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-report .rounded-2xl,
+  .print-report .rounded-xl,
+  .print-area .rounded-2xl,
+  .print-area .rounded-xl {
+    border-radius: 4px !important;
+  }
+
+  /* Member profile financial stat cards in a clean 4-column row */
+  .print-report .grid,
+  .print-area .grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+}
