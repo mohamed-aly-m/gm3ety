@@ -150,7 +150,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, s
           <div className="p-4 m-3 rounded-xl bg-app text-xs text-app-secondary border border-app text-center space-y-1">
             <p className="font-bold text-app-primary">جمعيتي v1.0</p>
             <p className="mt-0.5">إدارة الجمعيات بسهولة ووضوح</p>
-            <div className="pt-2 border-t border-app/50 text-[10px] text-app-secondary/80 leading-relaxed">
+            <div className="pt-2 border-t border-app/50 text-[10px] text-app-primary dark:text-app-secondary/80 leading-relaxed">
               <p>© 2026 Mohamed Aly</p>
               <p>جميع الحقوق محفوظة</p>
             </div>
