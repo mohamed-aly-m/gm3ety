@@ -9,13 +9,10 @@ import {
   EyeOff,
   UserPlus,
   LogIn,
-  KeyRound,
   CheckCircle2,
   AlertCircle,
   LogOut,
-  Wallet,
   ShieldCheck,
-  UserCheck,
   Send,
   Key,
 } from "lucide-react";
@@ -167,16 +164,6 @@ export default function AuthPage() {
       navigate(targetPath, { replace: true });
     }
   }, [user, recoveryMode, mode, fromPath, navigate, location.search]);
-
-  // Dynamic Icon for Top Header Badge
-  const HeaderIcon =
-    mode === "login"
-      ? UserCheck
-      : mode === "register"
-      ? UserPlus
-      : mode === "reset_confirm"
-      ? Key
-      : KeyRound;
 
   // Auto-save pending draft association if user just logged in or registered
   const processPendingAssociationSave = async (authenticatedUserId) => {
@@ -396,7 +383,7 @@ export default function AuthPage() {
           <div className="pt-4 border-t border-app flex flex-col gap-2.5">
             <Link to="/">
               <Button variant="primary" className="w-full">
-                <Wallet className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4" />
                 <span>الذهاب إلى جمعياتي</span>
               </Button>
             </Link>
@@ -417,10 +404,14 @@ export default function AuthPage() {
       ) : (
         <Card className="space-y-5 p-6 border border-app shadow-md">
           {/* Header */}
-          <div className="text-center space-y-2 border-b border-app pb-4">
-            <div className="w-12 h-12 rounded-2xl bg-sky-700 text-white flex items-center justify-center mx-auto shadow-md">
-              <HeaderIcon className="w-6 h-6 stroke-2" />
-            </div>
+          <div className="text-center space-y-3 border-b border-app pb-4">
+            <Link to="/" className="inline-block">
+              <img
+                src="/logo.png"
+                alt="جمعيتي"
+                className="h-16 w-16 mx-auto object-contain drop-shadow-sm hover:scale-105 transition-transform"
+              />
+            </Link>
 
             <h1 className="text-2xl font-black text-app-primary">
               {mode === "login" && "دخول منظم الجمعية"}

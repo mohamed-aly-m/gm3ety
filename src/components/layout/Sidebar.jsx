@@ -41,7 +41,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, s
 
       <aside
         className={`
-          fixed md:sticky top-15.25 h-[calc(100vh-61px)] right-0 z-40 md:z-20
+          fixed md:sticky top-18 h-[calc(100vh-72px)] right-0 z-40 md:z-20
           bg-card-app border-l border-app shadow-lg md:shadow-none
           flex flex-col justify-between shrink-0
           transition-all duration-300 ease-in-out

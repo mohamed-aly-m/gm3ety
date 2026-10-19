@@ -15,7 +15,7 @@ export default function Header({ isMobileOpen, setMobileOpen }) {
   };
 
   return (
-    <header className="bg-header-app sticky top-0 z-50 shadow-xs border-b border-app px-4 md:px-6 py-3 transition-colors duration-200">
+    <header className="bg-header-app sticky top-0 z-50 shadow-xs border-b border-app px-4 md:px-6 py-2 transition-colors duration-200">
       <div className="w-full flex items-center justify-between">
         
         {/* Right Section: Mobile Menu Toggle & Brand Logo */}
@@ -28,11 +28,11 @@ export default function Header({ isMobileOpen, setMobileOpen }) {
             <Menu className="w-6 h-6" />
           </button>
 
-          <Link to="/" className="flex items-center gap-2.5 font-extrabold text-xl text-app-primary">
+          <Link to="/" className="flex items-center gap-3 font-extrabold text-xl text-app-primary">
             <img
               src="/logo.png"
               alt="جمعيتي"
-              className="h-9 w-9 object-contain"
+              className="h-14 w-14 object-contain transition-transform duration-200 drop-shadow-sm"
             />
             <span>جمعيتي</span>
           </Link>
