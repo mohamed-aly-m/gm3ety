@@ -88,6 +88,53 @@ export const AuthProvider = ({ children }) => {
 
     const initAuth = async () => {
       try {
+        // Handle PKCE code exchange if present in URL (?code=...)
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const code = params.get("code");
+          if (code) {
+            try {
+              const { data: exchangeData, error: exchangeErr } =
+                await supabase.auth.exchangeCodeForSession(code);
+              if (exchangeErr) {
+                console.warn("[GAM3ETY AUTH] Code exchange warning:", exchangeErr.message);
+              } else if (exchangeData?.session) {
+                // If it's a recovery flow, enable recovery mode
+                const modeParam = params.get("mode");
+                if (modeParam === "reset_confirm") {
+                  setRecoveryMode(true);
+                }
+              }
+            } catch (exchangeEx) {
+              console.warn("[GAM3ETY AUTH] Code exchange exception:", exchangeEx);
+            }
+          }
+
+          // Handle hash tokens if present in URL (#access_token=...&type=recovery)
+          const hash = window.location.hash;
+          if (hash && (hash.includes("access_token") || hash.includes("type=recovery"))) {
+            const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+            const accessToken = hashParams.get("access_token");
+            const refreshToken = hashParams.get("refresh_token");
+            const type = hashParams.get("type");
+
+            if (type === "recovery") {
+              setRecoveryMode(true);
+            }
+
+            if (accessToken && refreshToken) {
+              try {
+                await supabase.auth.setSession({
+                  access_token: accessToken,
+                  refresh_token: refreshToken,
+                });
+              } catch (setSessErr) {
+                console.warn("[GAM3ETY AUTH] setSession from hash error:", setSessErr);
+              }
+            }
+          }
+        }
+
         const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
         if (sessionErr) throw sessionErr;
 
@@ -136,7 +183,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Login with Email or Mobile + Password
+  // Login with Email + Password
   const login = async (identifier, password) => {
     setLoading(true);
     setError(null);
@@ -148,7 +195,7 @@ export const AuthProvider = ({ children }) => {
       const cleanIdentifier = String(identifier || "").trim().toLowerCase();
       let loginEmail = cleanIdentifier;
 
-      // If mobile number entered instead of email, find corresponding email in profiles
+      // Fallback: if somehow a mobile number is entered, find corresponding email in profiles
       if (!cleanIdentifier.includes("@")) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -159,7 +206,7 @@ export const AuthProvider = ({ children }) => {
         if (profile?.email) {
           loginEmail = profile.email;
         } else {
-          throw new Error("لم يتم العثور على حساب مسجل برقم الموبايل هذا. يرجى إدخال البريد الإلكتروني.");
+          throw new Error("يرجى إدخال بريد إلكتروني صحيح.");
         }
       }
 

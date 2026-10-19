@@ -25,6 +25,7 @@ import { calculatePercentage, calculatePayoutAmount } from "../utils/calculation
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
+import { supabase } from "../lib/supabase";
 
 export default function AuthPage() {
   const {
@@ -52,6 +53,7 @@ export default function AuthPage() {
   // Form State
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -61,22 +63,110 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [isSessionReady, setIsSessionReady] = useState(false);
 
-  // Check URL params for reset_confirm mode
+  // Check URL params, hash, and recovery session for reset_confirm mode
   useEffect(() => {
+    let isMounted = true;
     const searchParams = new URLSearchParams(location.search);
-    if (searchParams.get("mode") === "reset_confirm" || recoveryMode) {
+    const modeParam = searchParams.get("mode");
+    const code = searchParams.get("code");
+    const hash = window.location.hash || "";
+    const isRecoveryHash = hash.includes("type=recovery") || hash.includes("access_token");
+
+    const isRecovery =
+      modeParam === "reset_confirm" ||
+      recoveryMode ||
+      Boolean(code) ||
+      isRecoveryHash;
+
+    if (isRecovery) {
       setMode("reset_confirm");
     }
-  }, [location.search, recoveryMode]);
+
+    const checkAndInitSession = async () => {
+      // 1. If PKCE code is in query params, exchange it for session
+      if (code) {
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.warn("[GAM3ETY AUTH] Code exchange error in AuthPage:", error.message);
+          } else if (data?.session && isMounted) {
+            setIsSessionReady(true);
+            return;
+          }
+        } catch (ex) {
+          console.warn("[GAM3ETY AUTH] Code exchange exception:", ex);
+        }
+      }
+
+      // 2. If Hash token is in URL (#access_token=...&type=recovery)
+      if (isRecoveryHash) {
+        const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        if (accessToken && refreshToken) {
+          try {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            if (!error && data?.session && isMounted) {
+              setIsSessionReady(true);
+              return;
+            }
+          } catch (ex) {
+            console.warn("[GAM3ETY AUTH] setSession hash exception:", ex);
+          }
+        }
+      }
+
+      // 3. Check existing Supabase session
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session && isMounted) {
+          setIsSessionReady(true);
+        }
+      } catch (ex) {
+        console.warn("[GAM3ETY AUTH] getSession exception:", ex);
+      }
+    };
+
+    if (isRecovery) {
+      checkAndInitSession();
+    }
+
+    // Also listen to onAuthStateChange to capture PASSWORD_RECOVERY or SIGNED_IN
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || (session && isRecovery)) {
+        if (isMounted) {
+          setMode("reset_confirm");
+          setIsSessionReady(true);
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
+    };
+  }, [location.search, location.hash, recoveryMode]);
 
   // Auto-redirect authenticated user away from /auth if not in recovery mode
   useEffect(() => {
-    if (user && !recoveryMode && mode !== "reset_confirm") {
+    const searchParams = new URLSearchParams(location.search);
+    const isReset =
+      searchParams.get("mode") === "reset_confirm" ||
+      recoveryMode ||
+      mode === "reset_confirm" ||
+      location.search.includes("code=") ||
+      window.location.hash.includes("access_token");
+
+    if (user && !isReset) {
       const targetPath = fromPath === "/auth" ? "/" : fromPath;
       navigate(targetPath, { replace: true });
     }
-  }, [user, recoveryMode, mode, fromPath, navigate]);
+  }, [user, recoveryMode, mode, fromPath, navigate, location.search]);
 
   // Dynamic Icon for Top Header Badge
   const HeaderIcon =
@@ -161,13 +251,14 @@ export default function AuthPage() {
     setErrorMsg("");
     setSuccessMsg("");
 
-    if (!mobile.trim() || !password) {
-      setErrorMsg("يرجى إدخال رقم الموبايل أو البريد الإلكتروني وكلمة المرور");
+    const targetEmail = (loginEmail || email).trim();
+    if (!targetEmail || !password) {
+      setErrorMsg("يرجى إدخال البريد الإلكتروني وكلمة المرور");
       return;
     }
 
     setLoading(true);
-    const res = await login(mobile.trim(), password);
+    const res = await login(targetEmail, password);
     setLoading(false);
 
     if (res.success) {
@@ -254,6 +345,15 @@ export default function AuthPage() {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
+
+    if (!isSessionReady) {
+      // Re-verify session directly
+      const { data } = await supabase.auth.getSession();
+      if (!data?.session) {
+        setErrorMsg("جلسة استعادة كلمة المرور غير مكتملة أو منتهية الصلاحية. يرجى طلب رابط جديد.");
+        return;
+      }
+    }
 
     if (password.length < 6) {
       setErrorMsg("كلمة المرور الجديدة يجب ألا تقل عن 6 أحرف أو أرقام");
@@ -356,12 +456,12 @@ export default function AuthPage() {
           {mode === "login" && (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <Input
-                label="رقم الموبايل أو البريد الإلكتروني"
-                type="text"
-                placeholder="01xxxxxxxxx أو yourname@example.com"
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                icon={User}
+                label="البريد الإلكتروني"
+                type="email"
+                placeholder="yourname@example.com"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                icon={Mail}
                 required
               />
 
@@ -558,6 +658,13 @@ export default function AuthPage() {
 
           {mode === "reset_confirm" && (
             <form onSubmit={handleUpdatePassword} className="space-y-4">
+              {!isSessionReady && (
+                <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 text-xs font-semibold border border-sky-200 dark:border-sky-900 flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-sky-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                  <span>جاري تهيئة جلسة الأمان للتحقق من رابط الاستعادة...</span>
+                </div>
+              )}
+
               <Input
                 label="كلمة المرور الجديدة"
                 type="password"
@@ -566,6 +673,7 @@ export default function AuthPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 icon={Lock}
                 required
+                disabled={!isSessionReady || loading}
               />
 
               <Input
@@ -576,6 +684,7 @@ export default function AuthPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 icon={Lock}
                 required
+                disabled={!isSessionReady || loading}
               />
 
               <Button
@@ -583,10 +692,16 @@ export default function AuthPage() {
                 variant="primary"
                 size="lg"
                 className="w-full font-bold"
-                disabled={loading}
+                disabled={!isSessionReady || loading}
               >
                 <Key className="w-4 h-4" />
-                <span>{loading ? "جاري حفظ كلمة المرور..." : "حفظ كلمة المرور الجديدة"}</span>
+                <span>
+                  {loading
+                    ? "جاري حفظ كلمة المرور..."
+                    : !isSessionReady
+                    ? "بانتظار تهيئة الجلسة..."
+                    : "حفظ كلمة المرور الجديدة"}
+                </span>
               </Button>
             </form>
           )}
