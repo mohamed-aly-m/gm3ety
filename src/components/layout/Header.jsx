@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sun, Moon, Wallet, User, LogOut, Menu, PlusCircle } from "lucide-react";
+import { Sun, Moon, User, LogOut, Menu, PlusCircle } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 
@@ -28,10 +28,12 @@ export default function Header({ isMobileOpen, setMobileOpen }) {
             <Menu className="w-6 h-6" />
           </button>
 
-          <Link to="/" className="flex items-center gap-2 font-extrabold text-xl text-app-primary">
-            <div className="p-2 rounded-xl bg-sky-700 text-white shadow-md">
-              <Wallet className="w-6 h-6 text-white stroke-[2.5]" />
-            </div>
+          <Link to="/" className="flex items-center gap-2.5 font-extrabold text-xl text-app-primary">
+            <img
+              src="/logo.png"
+              alt="جمعيتي"
+              className="h-9 w-9 object-contain"
+            />
             <span>جمعيتي</span>
           </Link>
         </div>

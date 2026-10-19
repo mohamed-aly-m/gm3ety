@@ -605,23 +605,57 @@ export default function CreateAssociation({ mode: propMode, editAssociationId: p
       const sVal = Math.round(Number(shareValue));
       const countShares = Number(totalShares);
 
-      // 2. Prepare people payload
-      const peoplePayload = people.map((p) => ({
-        id: p.id,
-        name: p.name.trim(),
-        phone: p.phone && p.phone.trim() ? p.phone.trim() : "غير مسجل",
-      }));
+      // Helper to generate UUID for new persons and shares
+      const generateUUID = () => {
+        if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+          return crypto.randomUUID();
+        }
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+        });
+      };
 
-      // 3. Prepare shares and contributors payload
-      const sharesPayload = sharesToSave.map((sh) => ({
-        id: sh.id,
-        share_order: sh.shareOrder,
-        contributors: (sh.contributors || []).map((c) => ({
-          id: c.id,
-          person_id: c.personId,
-          monthly_contribution: Math.round(Number(c.contributedAmount) || 0),
-        })),
-      }));
+      // 2. Prepare people payload with UUID mapping for newly added members
+      const idMap = {};
+      const peoplePayload = people.map((p) => {
+        let actualId = p.id;
+        const isTemp = !actualId || String(actualId).startsWith("temp_") || String(actualId).startsWith("p_temp_");
+        if (isTemp) {
+          actualId = generateUUID();
+          idMap[p.id] = actualId;
+        }
+        return {
+          id: actualId,
+          name: p.name.trim(),
+          phone: p.phone && p.phone.trim() ? p.phone.trim() : "غير مسجل",
+        };
+      });
+
+      // 3. Prepare shares and contributors payload, mapping contributor personId to matching UUIDs
+      const sharesPayload = sharesToSave.map((sh) => {
+        let actualShareId = sh.id;
+        if (!actualShareId || String(actualShareId).startsWith("temp_") || String(actualShareId).startsWith("sh_temp_")) {
+          actualShareId = generateUUID();
+        }
+
+        return {
+          id: actualShareId,
+          share_order: sh.shareOrder,
+          contributors: (sh.contributors || []).map((c) => {
+            let actualContribId = c.id;
+            if (!actualContribId || String(actualContribId).startsWith("temp_") || String(actualContribId).startsWith("sc_temp_")) {
+              actualContribId = generateUUID();
+            }
+            const mappedPersonId = idMap[c.personId] || c.personId;
+            return {
+              id: actualContribId,
+              person_id: mappedPersonId,
+              monthly_contribution: Math.round(Number(c.contributedAmount) || 0),
+            };
+          }),
+        };
+      });
 
       // 4. Execute atomic transaction in PostgreSQL
       await api.editAssociationStructure({

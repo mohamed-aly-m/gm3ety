@@ -240,14 +240,65 @@ export const associationService = {
     const countShares = Math.max(1, Math.round(Number(totalShares) || 1));
     const sVal = Math.round(Number(shareValue) || 1000);
 
+    const generateUUID = () => {
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+      }
+      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+      });
+    };
+
+    // Sanitize people and map any temporary IDs to valid UUIDs
+    const idMap = {};
+    const sanitizedPeople = (people || []).map((p) => {
+      let actualId = p.id;
+      if (!actualId || String(actualId).startsWith("temp_") || String(actualId).startsWith("p_temp_")) {
+        actualId = generateUUID();
+        if (p.id) idMap[p.id] = actualId;
+      }
+      return {
+        id: actualId,
+        name: String(p.name || "").trim(),
+        phone: p.phone && String(p.phone).trim() ? String(p.phone).trim() : "غير مسجل",
+      };
+    });
+
+    // Sanitize shares and map contributor person_id to matching UUIDs
+    const sanitizedShares = (shares || []).map((sh) => {
+      let actualShareId = sh.id;
+      if (!actualShareId || String(actualShareId).startsWith("temp_") || String(actualShareId).startsWith("sh_temp_")) {
+        actualShareId = generateUUID();
+      }
+
+      return {
+        id: actualShareId,
+        share_order: sh.share_order ?? sh.shareOrder,
+        contributors: (sh.contributors || []).map((c) => {
+          let actualContribId = c.id;
+          if (!actualContribId || String(actualContribId).startsWith("temp_") || String(actualContribId).startsWith("sc_temp_")) {
+            actualContribId = generateUUID();
+          }
+          const rawPersonId = c.person_id ?? c.personId;
+          const mappedPersonId = idMap[rawPersonId] || rawPersonId;
+          return {
+            id: actualContribId,
+            person_id: mappedPersonId,
+            monthly_contribution: Math.round(Number(c.monthly_contribution ?? c.contributedAmount) || 0),
+          };
+        }),
+      };
+    });
+
     const { data: rpcRes, error: rpcErr } = await supabase.rpc("edit_association_structure", {
       p_association_id: String(associationId),
       p_name: String(name).trim(),
       p_share_value: sVal,
       p_total_shares: countShares,
       p_start_date: startDate,
-      p_people: people,
-      p_shares: shares,
+      p_people: sanitizedPeople,
+      p_shares: sanitizedShares,
     });
 
     if (rpcErr) {

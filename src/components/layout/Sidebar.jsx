@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, PlusCircle, Users, ChevronRight, ChevronLeft, Wallet, ShieldCheck } from "lucide-react";
+import { Home, PlusCircle, Users, ChevronRight, ChevronLeft, Wallet, ShieldCheck, BookOpen } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
+import GuideModal from "../guide/GuideModal";
 
 export default function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, setMobileOpen }) {
   const { user } = useAuth();
   const location = useLocation();
   const [userAssociations, setUserAssociations] = useState([]);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -89,6 +91,24 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, s
                 </NavLink>
               );
             })}
+
+            {/* Guide Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsGuideOpen(true);
+                if (setMobileOpen) setMobileOpen(false);
+              }}
+              className={`
+                w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-150 font-bold text-sm
+                text-app-primary hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-right
+                ${isCollapsed ? "justify-center px-0" : ""}
+              `}
+              title={isCollapsed ? "دليل استخدام الجمعية" : undefined}
+            >
+              <BookOpen className="w-5 h-5 shrink-0 text-sky-600 dark:text-sky-400" />
+              {!isCollapsed && <span className="truncate">دليل استخدام الجمعية</span>}
+            </button>
           </div>
 
           {/* User Associations Section in Sidebar */}
@@ -137,6 +157,12 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, isMobileOpen, s
           </div>
         )}
       </aside>
+
+      {/* Interactive User Guide Modal */}
+      <GuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+      />
     </>
   );
 }
